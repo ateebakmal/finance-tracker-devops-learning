@@ -1,0 +1,20 @@
+docker command i ran to run the container:
+    docker run -d --name finance-tracker-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=123 -e POSTGRES_DB=finance_tracker -p 5433:5432 -v finance-tracker_pgdata:/var/lib/postgresql/data postgres:17
+
+
+PASSWORD=2e4696881a8f4744e20998db
+docker run --rm -i -e DATABASE_URL="postgresql+asyncpg://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/finance_tracker" -e DB_SSL=require -e DB_ECHO=false -e FRONTEND_URL=http://localhost -e SESSION_SECRET=x -e JWT_SECRET=y -e REFRESH_TOKEN_EXPIRE_DAYS=30 -e ACCESS_TOKEN_EXPIRE_MINUTES=60 ateebakmal/finance-backend:1.0.0 python - < backend\seed.py
+
+docker run --rm -i postgres:17 psql "postgresql://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/finance_tracker?sslmode=require" -c "CREATE ROLE evaluator WITH LOGIN PASSWORD 'PICK_A_PASSWORD'; GRANT CONNECT ON DATABASE finance_tracker TO evaluator; GRANT USAGE ON SCHEMA public TO evaluator; GRANT SELECT ON ALL TABLES IN SCHEMA public TO evaluator; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO evaluator;"
+
+
+docker run --rm -i postgres:17 psql "postgresql://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/postgres?sslmode=require" -c "CREATE DATABASE finance_tracker;"
+
+docker run --rm -e DATABASE_URL="postgresql+asyncpg://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/finance_tracker" -e DB_SSL=require -e DB_ECHO=false -e FRONTEND_URL=http://localhost -e SESSION_SECRET=x -e JWT_SECRET=y -e REFRESH_TOKEN_EXPIRE_DAYS=30 -e ACCESS_TOKEN_EXPIRE_MINUTES=60 ateebakmal/finance-backend:1.0.0 alembic upgrade head
+
+docker run --rm -i -e DATABASE_URL="postgresql+asyncpg://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/finance_tracker" -e DB_SSL=require -e DB_ECHO=false -e FRONTEND_URL=http://localhost -e SESSION_SECRET=x -e JWT_SECRET=y -e REFRESH_TOKEN_EXPIRE_DAYS=30 -e ACCESS_TOKEN_EXPIRE_MINUTES=60 ateebakmal/finance-backend:1.0.0 python - < backend\seed.py
+
+
+docker run --rm -i postgres:17 psql "postgresql://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/finance_tracker?sslmode=require" -c "CREATE ROLE evaluator WITH LOGIN PASSWORD 'PICK_A_PASSWORD'; GRANT CONNECT ON DATABASE finance_tracker TO evaluator; GRANT USAGE ON SCHEMA public TO evaluator; GRANT SELECT ON ALL TABLES IN SCHEMA public TO evaluator; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO evaluator;"
+
+docker run --rm -i postgres:17 psql "postgresql://postgres:12345678@finance-tracker-db.c360ii0oowsx.eu-north-1.rds.amazonaws.com:5432/finance_tracker?sslmode=require" -c "ALTER ROLE evaluator WITH PASSWORD '12345678';"

@@ -1,0 +1,17 @@
+1:
+Inside create category, we cant add a new category with a similar name even with different parent.
+Like if there is a top level category bills. And there is another category others -> bills. We cant do this because bills already exists. 
+Question: Should we allow this or not?
+
+Fixed
+1: When selecting current date we get an error. Most probably the issue is that we are checking transaction_date >= today. Fix that
+
+1: Whenever we go to a different page and come back to dashboard, we refetch the data. I don't think we need auto refetching, only fetch after transaction is added.
+
+1: In recent transaction on dashboard I am not seeing transactions for expense
+
+2: Adding recurring transactions
+
+3: Adding budgets
+
+4: All issues where schema mismatches gets a default error message, format it so we can show it to the frontend.
