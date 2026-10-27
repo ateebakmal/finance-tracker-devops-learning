@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17
-    container_name: ft-part1-db
+    container_name: ft-part1-db 
     restart: unless-stopped
 
     environment:
