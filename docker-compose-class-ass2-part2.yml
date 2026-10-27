@@ -1,0 +1,38 @@
+services:
+  frontend:
+    image: ateebakmal/class-assignment-2-frontend:part2
+    container_name: ft-part2-frontend
+    restart: unless-stopped
+    ports:
+      - "3002:4173"
+    depends_on:
+      - backend
+
+  backend:
+    image: ateebakmal/class-assignment-2-backend:part1
+    container_name: ft-part2-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17
+    container_name: ft-part2-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: finance_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ft-part2-postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+
+volumes:
+  ft-part2-postgres-data:
