@@ -1,0 +1,162 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        REPO_URL = 'https://github.com/ateebakmal/finance-tracker-devops-learning.git'
+        COMPOSE_FILE = 'docker-compose-class-ass2-part2.yml'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: "${REPO_URL}"
+
+                script {
+                    env.COMMIT_HASH = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    env.COMMITTER_EMAIL = sh(
+                        script: 'git log -1 --format=%ae',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Commit: ${env.COMMIT_HASH}"
+                    echo "Commit author email: ${env.COMMITTER_EMAIL}"
+                }
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'class-ass-2-backend-env',
+                        variable: 'BACKEND_ENV_CREDENTIAL'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        test -f "$COMPOSE_FILE"
+                        test -d backend
+
+                        install -m 600 \
+                            "$BACKEND_ENV_CREDENTIAL" \
+                            backend/.env
+
+                        echo "Backend environment file is ready."
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Part II') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'class-ass-2-compose-env',
+                        variable: 'COMPOSE_ENV_CREDENTIAL'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+                        set +x
+
+                        docker compose \
+                            --env-file "$COMPOSE_ENV_CREDENTIAL" \
+                            -f "$COMPOSE_FILE" \
+                            config --quiet
+
+                        docker compose \
+                            --env-file "$COMPOSE_ENV_CREDENTIAL" \
+                            -f "$COMPOSE_FILE" \
+                            up --pull always -d
+
+                        echo "Part II deployment completed."
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'class-ass-2-compose-env',
+                        variable: 'COMPOSE_ENV_CREDENTIAL'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        docker compose \
+                            --env-file "$COMPOSE_ENV_CREDENTIAL" \
+                            -f "$COMPOSE_FILE" \
+                            ps
+
+                        for service in db backend frontend; do
+                            container_id=$(docker compose \
+                                --env-file "$COMPOSE_ENV_CREDENTIAL" \
+                                -f "$COMPOSE_FILE" \
+                                ps -q "$service")
+
+                            if [ -z "$container_id" ]; then
+                                echo "ERROR: No container found for $service"
+                                exit 1
+                            fi
+
+                            running=$(docker inspect \
+                                --format '{{.State.Running}}' \
+                                "$container_id")
+
+                            if [ "$running" != "true" ]; then
+                                echo "ERROR: $service is not running"
+                                docker logs "$container_id" || true
+                                exit 1
+                            fi
+                        done
+
+                        echo "All Part II containers are running."
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                def result = currentBuild.currentResult ?: 'UNKNOWN'
+                def recipient = env.COMMITTER_EMAIL?.trim()
+
+                if (recipient && recipient.contains('@')) {
+                    emailext(
+                        to: recipient,
+                        subject: "Finance Tracker Part II - ${result} - Build #${env.BUILD_NUMBER}",
+                        mimeType: 'text/plain',
+                        body: """Finance Tracker Part II pipeline result
+
+Build status: ${result}
+Build number: ${env.BUILD_NUMBER}
+Commit: ${env.COMMIT_HASH ?: 'Unavailable'}
+Commit author email: ${recipient}
+Jenkins job: ${env.JOB_NAME}
+Build URL: ${env.BUILD_URL}
+
+Please open the Jenkins build URL for the complete console output.
+"""
+                    )
+                } else {
+                    echo 'WARNING: No valid commit author email was found. Email notification skipped.'
+                }
+            }
+        }
+    }
+}
